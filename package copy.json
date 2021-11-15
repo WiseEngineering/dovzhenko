@@ -1,5 +1,5 @@
 {
-  "name": "http_sse",
+  "name": "http_based_framework",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
@@ -12,8 +12,16 @@
     "lint": "npx eslint . --ext .ts",
     "build": "npx tsc --project tsconfig.json"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2rueSid/http_based_framework.git"
+  },
   "author": "2rueSid",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/2rueSid/http_based_framework/issues"
+  },
+  "homepage": "https://github.com/2rueSid/http_based_framework#readme",
   "devDependencies": {
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "^4.33.0",

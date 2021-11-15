@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "AMD",
+    "skipLibCheck": true,
+    "incremental": true,
+    "strict": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "outFile": "./dist/main.js",
+    "rootDir": "."
+  }
+}
