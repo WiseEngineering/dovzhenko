@@ -1,10 +1,13 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import axios from 'axios';
+
+import HttpClient from './lib/httpClient';
+
+const httpClient = new HttpClient();
 
 const PORT = 3000;
 
 const getUserData = async () => {
-  const response = await axios.get('https://randomuser.me/api');
+  const response = await httpClient.get('https://randomuser.me/api');
   console.log(response);
   return response.data.results[0];
 };

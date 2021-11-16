@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, AxiosRequestConfig, Axios } from 'axios';
+import { AxiosResponse, AxiosRequestConfig, Axios } from 'axios';
 
 interface HttpClientMethods {
   get<T = any, R = AxiosResponse<T>, D = any>(
