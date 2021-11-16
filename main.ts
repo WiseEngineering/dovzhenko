@@ -1,25 +1,19 @@
-import { createServer, IncomingMessage, ServerResponse } from 'http';
+import axios from 'axios';
+import { IncomingMessage, ServerResponse } from 'http';
+import Server from './lib/server';
 
-import HttpClient from './lib/httpClient';
+const server = new Server();
 
-const httpClient = new HttpClient();
-
-const PORT = 3000;
+server.createServer();
 
 const getUserData = async () => {
-  const response = await httpClient.get('https://randomuser.me/api');
-  console.log(response);
+  const response = await axios.get('https://randomuser.me/api');
+
   return response.data.results[0];
 };
 
-let i = 1;
-
-const sendUserData = (req: IncomingMessage, res: ServerResponse) => {
-  res.writeHead(200, {
-    Connection: 'keep-alive',
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-  });
+const getUsers = async (req: IncomingMessage, res: ServerResponse) => {
+  let i = 1;
 
   const timer = setInterval(async () => {
     if (i > 10) {
@@ -31,6 +25,7 @@ const sendUserData = (req: IncomingMessage, res: ServerResponse) => {
     }
 
     const data = await getUserData();
+    console.log(data);
 
     res.write(`event: randomUser\nid: ${i}\nretry: 5000\ndata: ${JSON.stringify(data)}\n\n`);
 
@@ -44,25 +39,21 @@ const sendUserData = (req: IncomingMessage, res: ServerResponse) => {
     res.end();
     console.log('Client closed the connection.');
   });
-
-  req.on('error', (err) => {
-    clearInterval(timer);
-    res.end();
-    console.log('Error', err.message);
-  });
 };
 
-const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const countdown = async (res: ServerResponse, count: number) => {
+  res.write('data: ' + count + '\n\n');
+  if (count) setTimeout(() => countdown(res, count - 1), 1000);
+  else res.end();
+};
 
-  if (req.url === '/getUsers') {
-    sendUserData(req, res);
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-});
+const message = async (req: IncomingMessage, res: ServerResponse) => {
+  await countdown(res, 10);
+};
 
-server.listen(PORT, () => {
-  console.log('server listened on PORT: ', PORT);
-});
+const app = server.app;
+
+app.append('getUsers', getUsers);
+app.append('message', message);
+
+server.listen();
