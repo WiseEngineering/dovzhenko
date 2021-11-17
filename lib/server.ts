@@ -1,4 +1,5 @@
 import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } from 'http';
+import { parse } from 'url';
 
 import App, { IApp } from './app';
 import log from './log';
@@ -22,7 +23,7 @@ class Server implements IServer {
       this.setupHandlers(req, res);
       this.setupRoutes();
 
-      const route = this.routes.find(({ route }) => req.url === route);
+      const route = this.routeParams(this.parseReqUrl(req.url), req);
 
       if (!route) {
         res.writeHead(404);
@@ -47,6 +48,62 @@ class Server implements IServer {
 
   private setupRoutes(): void {
     this.routes = this.app.routes;
+  }
+
+  private routeParams(url: Array<string> | undefined, req: IncomingMessage): Route | undefined {
+    if (!url) return;
+
+    const pattern = new RegExp(':(.*)');
+
+    const rout = this.routes.find(({ route }) => route === req.url);
+
+    if (rout) {
+      Object.assign(req, { params: {} });
+      return rout;
+    }
+
+    if (!this.routes.find((v) => v.route.match(pattern) && v.route !== req.url)) {
+      return;
+    }
+
+    const parsedUrl = this.routes.find((v) => this.splitter(v.route).length === url.length);
+
+    if (!parsedUrl) {
+      return;
+    }
+
+    const splittedUrl = this.splitter(parsedUrl.route);
+
+    Object.assign(req, {
+      params: this.setRequestParams(
+        splittedUrl.filter((v, i) => v !== url[i]),
+        url.filter((v, i) => v !== splittedUrl[i])
+      ),
+    });
+
+    return parsedUrl;
+  }
+
+  private parseReqUrl(reqUrl: string | undefined): Array<string> | undefined {
+    if (!reqUrl) return;
+
+    return parse(reqUrl)
+      .pathname?.split('/')
+      .filter((v) => !!v);
+  }
+
+  private splitter(str: string): Array<string> {
+    return str.split('/').filter((val) => (val !== undefined ? val : false));
+  }
+
+  private setRequestParams(
+    names: Array<string>,
+    values: Array<string>
+  ): { [name: string]: string } {
+    const obj: { [name: string]: string } = {};
+
+    names.forEach((v, i) => (obj[v.replace(':', '')] = values[i]));
+    return obj;
   }
 
   private setupHandlers(req: IncomingMessage, res: ServerResponse): void {
