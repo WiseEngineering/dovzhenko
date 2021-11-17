@@ -5,7 +5,7 @@ import Server from './lib/server';
 import Channel from './lib/chanel';
 
 const server = new Server();
-const channel = new Channel({ maxStreamDuration: 0 });
+const channel = new Channel();
 
 server.createServer();
 

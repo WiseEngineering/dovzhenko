@@ -44,7 +44,7 @@ class Channel implements IChannel {
     this.options = Object.assign(
       {},
       {
-        maxStreamDuration: 100000,
+        maxStreamDuration: 0,
         startId: 1,
         historySize: 100,
         rewind: 1,
