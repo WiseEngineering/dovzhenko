@@ -38,13 +38,16 @@ const getUsers = async (req: IncomingMessage, res: ServerResponse) => {
     clearInterval(timer);
     res.end();
     console.log('Client closed the connection.');
+    req.emit('finish');
   });
 };
 
 const countdown = async (res: ServerResponse, count: number) => {
   res.write('data: ' + count + '\n\n');
   if (count) setTimeout(() => countdown(res, count - 1), 1000);
-  else res.end();
+  else {
+    res.end();
+  }
 };
 
 const message = async (req: IncomingMessage, res: ServerResponse) => {

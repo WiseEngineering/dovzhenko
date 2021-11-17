@@ -60,7 +60,6 @@ class Server implements ServerMethods {
     req.on('error', (err: Error) => {
       log(req, requestStart, err.message);
     });
-
     req.on('finish', () => {
       log(req, requestStart, 'request finished');
     });
