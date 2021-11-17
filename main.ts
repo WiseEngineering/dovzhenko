@@ -1,10 +1,17 @@
 import axios from 'axios';
 import { IncomingMessage, ServerResponse } from 'http';
+
 import Server from './lib/server';
+import Channel from './lib/chanel';
 
 const server = new Server();
+const channel = new Channel({ maxStreamDuration: 0 });
 
 server.createServer();
+
+const app = server.app;
+
+setInterval(() => channel.publish('hello world', 'hello'), 1000);
 
 const getUserData = async () => {
   const response = await axios.get('https://randomuser.me/api');
@@ -19,44 +26,32 @@ const getUsers = async (req: IncomingMessage, res: ServerResponse) => {
     if (i > 10) {
       clearInterval(timer);
       console.log('10 users has been sent.');
-      res.write('id: -1\ndata:\n\n');
-      res.end();
+      channel.unsubscribe({ req, res, events: ['getUsers'] });
       return;
     }
 
     const data = await getUserData();
-    console.log(data);
 
-    res.write(`event: randomUser\nid: ${i}\nretry: 5000\ndata: ${JSON.stringify(data)}\n\n`);
+    channel.publish(JSON.stringify(data), 'getUsers');
 
     console.log('User data has been sent.');
 
     i++;
   }, 2000);
 
+  channel.subscribe(req, res, ['getUsers']);
+
   req.on('close', () => {
     clearInterval(timer);
-    res.end();
-    console.log('Client closed the connection.');
-    req.emit('finish');
+    channel.unsubscribe({ req, res, events: ['getUsers'] });
   });
 };
 
-const countdown = async (res: ServerResponse, count: number) => {
-  res.write('data: ' + count + '\n\n');
-  if (count) setTimeout(() => countdown(res, count - 1), 1000);
-  else {
-    res.end();
-  }
+const helloWorld = (req: IncomingMessage, res: ServerResponse) => {
+  channel.subscribe(req, res, ['hello']);
 };
 
-const message = async (req: IncomingMessage, res: ServerResponse) => {
-  await countdown(res, 10);
-};
-
-const app = server.app;
-
+app.append('hello', helloWorld);
 app.append('getUsers', getUsers);
-app.append('message', message);
 
 server.listen(3300);

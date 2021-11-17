@@ -1,23 +1,19 @@
 import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } from 'http';
 
-import App from './app';
+import App, { IApp } from './app';
 import log from './log';
 
 export type CbFunctionType = (req: IncomingMessage, res: ServerResponse) => void;
 export type Route = { route: string; cb: CbFunctionType };
-export interface ServerMethods {
+export interface IServer {
   createServer: () => void;
   listen: <T = number>(port?: T) => void;
+  app: IApp;
 }
 
-class Server implements ServerMethods {
+class Server implements IServer {
   private server!: HttpServer;
   private routes!: Array<Route>;
-  private headers = {
-    'Content-Type': 'text/event-stream',
-    Connection: 'keep-alive',
-    'Cache-Control': 'no-cache',
-  };
 
   public app = new App();
 
@@ -25,8 +21,6 @@ class Server implements ServerMethods {
     this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
       this.setupHandlers(req, res);
       this.setupRoutes();
-
-      res.writeHead(200, this.headers);
 
       const route = this.routes.find(({ route }) => req.url === route);
 
@@ -36,6 +30,7 @@ class Server implements ServerMethods {
         return;
       }
 
+      req.emit('connection');
       await route?.cb(req, res);
     });
   }
@@ -61,7 +56,10 @@ class Server implements ServerMethods {
       log(req, requestStart, err.message);
     });
     req.on('finish', () => {
-      log(req, requestStart, 'request finished');
+      log(req, requestStart, 'Request finished');
+    });
+    req.on('connection', () => {
+      log(req, requestStart, 'Client connected');
     });
   }
 }

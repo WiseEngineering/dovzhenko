@@ -2,7 +2,11 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 import { Route } from './server';
 
-class App {
+export interface IApp {
+  routes: Array<Route>;
+  append: (event: string, cb: (req: IncomingMessage, res: ServerResponse) => void) => void;
+}
+class App implements IApp {
   public routes!: Array<Route>;
 
   public append(eventName: string, cb: (req: IncomingMessage, res: ServerResponse) => void) {
