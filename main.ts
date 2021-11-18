@@ -1,14 +1,14 @@
 import { ServerResponse } from 'http';
 
 import Server, { IRequest } from './lib/server';
-import Channel from './lib/chanel';
+import Channel, { IChannel } from './lib/chanel';
 
 const server = new Server();
 const app = server.app;
 
 server.createServer();
 
-const bidEvent: { [name: string]: any } = {};
+const bidEvent: { [name: string]: IChannel } = {};
 
 app.append('/publish', async (req: IRequest, res: ServerResponse) => {
   const body = req.body;
@@ -41,7 +41,7 @@ app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
   await bidEvent[bid].subscribe(req, res);
 });
 
-app.append('/status', async (req, res) => {
+app.append('/status', async (req: IRequest, res: ServerResponse) => {
   res.write(JSON.stringify(bidEvent));
   res.writeHead(200);
   res.end();
@@ -59,6 +59,37 @@ app.append('/list/:slug', async (req, res) => {
     res.write(JSON.stringify(bidEvent[slug].listClients()));
   }
 
+  res.end();
+});
+
+app.append('unsubscribe/:slug', async (req: IRequest, res: ServerResponse) => {
+  const { slug } = req.body;
+
+  if (!slug) {
+    res.writeHead(400, 'slug not provided');
+    res.end();
+  }
+
+  if (slug in bidEvent) {
+    res.writeHead(200, 'Client unsubscribed');
+    bidEvent[slug].unsubscribe({ req, res });
+  } else {
+    res.end();
+  }
+});
+
+app.append('close/:slug', async (req: IRequest, res: ServerResponse) => {
+  const { slug } = req.body;
+
+  if (!slug) {
+    res.writeHead(400, 'slug not provided');
+    res.end();
+  }
+
+  if (slug in bidEvent) {
+    res.writeHead(200, 'Connection closed');
+    bidEvent[slug].close();
+  }
   res.end();
 });
 
