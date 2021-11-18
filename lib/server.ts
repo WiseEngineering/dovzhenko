@@ -93,7 +93,12 @@ class Server implements IServer {
       return;
     }
 
-    const parsedUrl = this.routes.find((v) => isEqual(this.splitter(v.route), url));
+    const parsedUrl = this.routes.find((v) =>
+      isEqual(
+        this.splitter(v.route).map((v) => v.replace(':', '')),
+        url
+      )
+    );
 
     if (!parsedUrl) {
       return;
@@ -120,10 +125,7 @@ class Server implements IServer {
   }
 
   private splitter(str: string): Array<string> {
-    return str
-      .split('/')
-      .filter((val) => (val !== undefined ? val : false))
-      .map((v) => v.replace(':', ''));
+    return str.split('/').filter((val) => (val !== undefined ? val : false));
   }
 
   private setRequestParams(
