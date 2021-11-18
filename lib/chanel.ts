@@ -87,13 +87,11 @@ export default class SSEChannel {
             .map((str) => 'data: ' + str)
             .join('\n')
         : '';
-      output =
-        'id: ' +
-        id +
-        '\n' +
-        (eventName ? 'event: ' + eventName + '\n' : '') +
-        (inputData || 'data: ') +
-        '\n\n';
+
+      output = `id: ${id}\n${eventName ? 'event: ' + eventName + '\n' : ''}${
+        inputData || 'data: '
+      }\n\n`;
+
       this.messages.push({ id, eventName, output });
     }
 
