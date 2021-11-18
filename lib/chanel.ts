@@ -1,4 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
+import { IRequest } from './server';
 
 export type Client = {
   req: IncomingMessage;
@@ -103,9 +104,15 @@ export default class SSEChannel {
     return id;
   }
 
-  public async subscribe(req, res, events): Promise<Client> {
+  public async subscribe(
+    req: IRequest,
+    res: ServerResponse,
+    events: Array<string>
+  ): Promise<Client> {
     if (!this.active) throw new Error('Channel closed');
-    const client = { req, res, events };
+
+    const client: Client = { req, res, events };
+
     client.req.socket.setNoDelay(true);
     client.res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -115,10 +122,16 @@ export default class SSEChannel {
         '; max-age=0; stale-while-revalidate=0; stale-if-error=0',
       Connection: 'keep-alive',
     });
+
     let body = 'retry: ' + this.options.clientRetryInterval + '\n\n';
 
-    const lastID = Number.parseInt(req.headers['last-event-id'], 10);
+    const lastEventId = req.headers['last-event-id']
+      ? (req.headers['last-event-id'] as string)
+      : '';
+
+    const lastID = Number.parseInt(lastEventId, 10);
     const rewind = !Number.isNaN(lastID) ? this.nextID - 1 - lastID : this.options.rewind;
+
     if (rewind) {
       this.messages
         .filter((m) => this.hasEventMatch(client.events, m.eventName))

@@ -39,7 +39,7 @@ app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
     bidEvent[bid] = new Channel({ maxStreamDuration: 15000, pingInterval: 0 });
   }
 
-  bidEvent[bid].subscribe(req, res);
+  await bidEvent[bid].subscribe(req, res);
 });
 
 app.append('/status', async (req, res) => {
@@ -50,7 +50,6 @@ app.append('/status', async (req, res) => {
 
 app.append('/list/:slug', async (req, res) => {
   const { slug } = req.params;
-  console.log(slug);
 
   if (!slug) {
     res.writeHead(400, 'no slug provided');
