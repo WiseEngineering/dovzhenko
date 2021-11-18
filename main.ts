@@ -1,24 +1,21 @@
-import { ServerResponse } from 'http';
-
-import Server, { IRequest } from './lib/server';
-import Channel, { IChannel } from './lib/chanel';
+import Server from './lib/server';
+import Channel from './lib/chanel';
+import { IChannel, IRequest, IResponse } from './lib/types';
 
 const server = new Server();
-const app = server.app;
+const { app } = server;
 
 server.createServer();
 
 const bidEvent: { [name: string]: IChannel } = {};
 
-app.append('/publish', async (req: IRequest, res: ServerResponse) => {
-  const body = req.body;
+app.append('/publish', async (req: IRequest, res: IResponse) => {
+  const { slug, message, event } = req?.body;
 
-  if (!body.slug && !body.message && !body.event) {
+  if (!slug && !message && !event) {
     res.writeHead(400, 'body does not contains required data');
     res.end();
   }
-
-  const { slug, message, event } = body;
 
   if (slug in bidEvent) {
     await bidEvent[slug].publish(message, event);
@@ -31,7 +28,7 @@ app.append('/publish', async (req: IRequest, res: ServerResponse) => {
   res.end();
 });
 
-app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
+app.append('/bid/:slug', async (req: IRequest, res: IResponse) => {
   const bid = req.params.slug;
 
   if (!(bid in bidEvent)) {
@@ -41,7 +38,7 @@ app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
   await bidEvent[bid].subscribe(req, res);
 });
 
-app.append('/status', async (req: IRequest, res: ServerResponse) => {
+app.append('/status', async (req: IRequest, res: IResponse) => {
   res.write(JSON.stringify(bidEvent));
   res.end();
 });
@@ -61,7 +58,7 @@ app.append('/list/:slug', async (req, res) => {
   res.end();
 });
 
-app.append('close/:slug', async (req: IRequest, res: ServerResponse) => {
+app.append('close/:slug', async (req: IRequest, res: IResponse) => {
   const { slug } = req.params;
 
   if (!slug) {

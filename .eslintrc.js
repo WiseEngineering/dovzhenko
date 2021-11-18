@@ -11,8 +11,4 @@ module.exports = {
     jest: true,
   },
   ignorePatterns: ['.eslintrc.js'],
-  rules: {
-    'operator-linebreak': ['warning', 'none'],
-    'implicit-arrow-linebreak': ['warning'],
-  },
 };

@@ -1,60 +1,31 @@
-import { IncomingMessage, ServerResponse } from 'http';
-import { IRequest } from './server';
-
-export type Client = {
-  req: IncomingMessage;
-  res: ServerResponse;
-  events?: Array<string> | undefined;
-};
-
-export type Message = {
-  id: number;
-  eventName: string | undefined;
-  output: string;
-};
-
-export interface IChannelOptions {
-  maxStreamDuration: number;
-  startId: number;
-  historySize: number;
-  rewind: number;
-  pingInterval: number;
-  clientRetryInterval: number;
-}
-
-export interface IChannel {
-  options: IChannelOptions;
-  clients: Set<Client>;
-  messages: Array<Message>;
-  publish: (data?: any, eventName?: string) => Promise<number | void>;
-  subscribe: (req: IRequest, res: ServerResponse, events?: Array<string>) => Promise<Client>;
-  close: () => Promise<void>;
-  listClients: () => { [name: string]: any };
-  getSubscriberCount: () => number;
-}
+import {
+  Client, IChannel, IChannelOptions, IRequest, Message, IResponse,
+} from './types';
 
 export default class Channel implements IChannel {
   public options: IChannelOptions;
+
   public clients: Set<Client> = new Set();
+
   public messages: Array<Message> = [];
 
   private nextID: number;
+
   private active: boolean;
+
   private pingTimer: any;
 
   constructor(options: Partial<IChannelOptions>) {
-    this.options = Object.assign(
-      {},
-      {
-        pingInterval: 3000,
-        maxStreamDuration: 30000,
-        clientRetryInterval: 1000,
-        startId: 1,
-        historySize: 100,
-        rewind: 0,
-      },
-      options
-    );
+    this.options = {
+
+      pingInterval: 3000,
+      maxStreamDuration: 30000,
+      clientRetryInterval: 1000,
+      startId: 1,
+      historySize: 100,
+      rewind: 0,
+      ...options,
+    };
 
     this.nextID = this.options.startId;
     this.clients = new Set();
@@ -66,7 +37,7 @@ export default class Channel implements IChannel {
     }
   }
 
-  public async publish(data?: any, eventName?: string): Promise<number | void> {
+  public async publish(data?: any, eventName?: string): Promise<void> {
     if (!this.active) throw new Error('Channel closed');
 
     let output: string;
@@ -77,17 +48,19 @@ export default class Channel implements IChannel {
       if (!this.clients.size) return;
       output = 'data: \n\n';
     } else {
-      id = this.nextID++;
+      this.nextID += 1;
+      id = this.nextID;
+
       if (typeof inputData === 'object') inputData = JSON.stringify(inputData);
 
       inputData = inputData
         ? inputData
-            .split(/[\r\n]+/)
-            .map((str: string) => 'data: ' + str)
-            .join('\n')
+          .split(/[\r\n]+/)
+          .map((str: string) => `data: ${str}`)
+          .join('\n')
         : '';
 
-      output = `id: ${id}\n${eventName ? 'event: ' + eventName + '\n' : ''}${
+      output = `id: ${id}\n${eventName ? `event: ${eventName}\n` : ''}${
         inputData || 'data: '
       }\n\n`;
 
@@ -95,20 +68,18 @@ export default class Channel implements IChannel {
     }
 
     [...this.clients]
-      .filter((c) => !eventName || this.hasEventMatch(c.events, eventName))
+      .filter((c) => !eventName || Channel.hasEventMatch(c.events, eventName))
       .forEach((c) => c.res.write(output));
 
     while (this.messages.length > this.options.historySize) {
       this.messages.shift();
     }
-
-    return id;
   }
 
   public async subscribe(
     req: IRequest,
-    res: ServerResponse,
-    events?: Array<string>
+    res: IResponse,
+    events?: Array<string>,
   ): Promise<Client> {
     if (!this.active) throw new Error('Channel closed');
 
@@ -118,14 +89,14 @@ export default class Channel implements IChannel {
     client.res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': this.options.maxStreamDuration
-        ? 's-maxage=' +
-          (Math.floor(this.options.maxStreamDuration / 1000) - 1) +
-          '; max-age=0; stale-while-revalidate=0; stale-if-error=0'
+        ? `s-maxage=${
+          Math.floor(this.options.maxStreamDuration / 1000) - 1
+        }; max-age=0; stale-while-revalidate=0; stale-if-error=0`
         : 'no-cache',
       Connection: 'keep-alive',
     });
 
-    let body = 'retry: ' + this.options.clientRetryInterval + '\n\n';
+    let body = `retry: ${this.options.clientRetryInterval}\n\n`;
 
     const lastEventId = req.headers['last-event-id']
       ? (req.headers['last-event-id'] as string)
@@ -136,7 +107,7 @@ export default class Channel implements IChannel {
 
     if (rewind) {
       this.messages
-        .filter((m) => this.hasEventMatch(client.events, m.eventName))
+        .filter((m) => Channel.hasEventMatch(client.events, m.eventName))
         .slice(0 - rewind)
         .forEach((m) => {
           body += m.output;
@@ -159,7 +130,7 @@ export default class Channel implements IChannel {
   }
 
   public async close(): Promise<void> {
-    Promise.all([...this.clients].map(async (c) => await c.res.end()));
+    Promise.all([...this.clients].map(async (c) => c.res.end()));
     this.clients = new Set();
     this.messages = [];
     if (this.pingTimer) clearInterval(this.pingTimer);
@@ -173,7 +144,7 @@ export default class Channel implements IChannel {
       if (!(ip in rollupByIP)) {
         rollupByIP[ip] = 0;
       }
-      rollupByIP[ip]++;
+      rollupByIP[ip] += 1;
     });
     return rollupByIP;
   }
@@ -187,16 +158,17 @@ export default class Channel implements IChannel {
     this.clients.delete(c);
   }
 
-  private hasEventMatch(
+  private static hasEventMatch(
     subscriptionList: Array<any> | undefined,
-    eventName: string | undefined
+    eventName: string | undefined,
   ): boolean {
+    if (!subscriptionList) return true;
+
     if (!eventName && subscriptionList?.length) return true;
 
     return (
-      !subscriptionList ||
-      subscriptionList.some((pat) =>
-        pat instanceof RegExp ? pat.test(eventName!) : pat === eventName
+      subscriptionList.some(
+        (pat) => (pat instanceof RegExp ? pat.test(eventName!) : pat === eventName),
       )
     );
   }

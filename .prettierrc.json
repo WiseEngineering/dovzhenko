@@ -13,7 +13,7 @@
   "semi": true,
   "singleQuote": true,
   "tabWidth": 2,
-  "trailingComma": "es5",
+  "trailingComma": true,
   "useTabs": false,
   "vueIndentScriptAndStyle": false,
   "parser": "typescript"

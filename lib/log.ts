@@ -1,7 +1,9 @@
 import { IncomingMessage } from 'http';
 
 const log = (req: IncomingMessage, requestStart: number, message?: string): void => {
-  const { httpVersion, method, socket, url } = req;
+  const {
+    httpVersion, method, socket, url,
+  } = req;
   const { remoteAddress, remoteFamily } = socket;
   console.log(
     JSON.stringify(
@@ -16,8 +18,8 @@ const log = (req: IncomingMessage, requestStart: number, message?: string): void
         message,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 };
 

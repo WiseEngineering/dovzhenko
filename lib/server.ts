@@ -1,34 +1,25 @@
-import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } from 'http';
+import {
+  createServer, IncomingMessage, ServerResponse, Server as HttpServer,
+} from 'http';
 import { parse } from 'url';
 import { parse as querystring } from 'querystring';
 
-const isEqual = require('lodash.isequal');
-
-import App, { IApp } from './app';
+import App from './app';
 import log from './log';
+import { IRequest, IServer, Route } from './types';
 
-export type CbFunctionType = (req: IRequest, res: ServerResponse) => void;
-export type Route = { route: string; cb: CbFunctionType };
-export interface IServer {
-  createServer: () => void;
-  listen: <T = number>(port?: T) => void;
-  app: IApp;
-}
-
-export interface IRequest extends IncomingMessage {
-  params: { [name: string]: string };
-  body: any;
-}
+const isEqual = require('lodash.isequal');
 
 class Server implements IServer {
   private server!: HttpServer;
+
   private routes!: Array<Route>;
 
   public app = new App();
 
   public createServer() {
     this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      this.setupHandlers(req, res);
+      Server.setupHandlers(req);
       this.setupRoutes();
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Request-Method', '*');
@@ -36,7 +27,7 @@ class Server implements IServer {
       if (req.headers.origin) {
         res.setHeader('Access-Control-Allow-Headers', req.headers.origin!);
       }
-      const route = this.routeParams(this.parseReqUrl(req.url), req);
+      const route = this.routeParams(Server.parseReqUrl(req.url), req);
 
       if (!route) {
         res.writeHead(404);
@@ -45,8 +36,8 @@ class Server implements IServer {
       }
 
       req.emit('connection');
-      await this.parseBody(req);
-      await route?.cb(req as IRequest, res);
+      await Server.parseBody(req);
+      route?.cb(req as unknown as IRequest, res);
     });
   }
 
@@ -60,7 +51,7 @@ class Server implements IServer {
     });
   }
 
-  private async parseBody(req: IncomingMessage): Promise<void> {
+  private static async parseBody(req: IncomingMessage): Promise<void> {
     let body: string = '';
     req.on('data', (data: any) => {
       body += data;
@@ -86,6 +77,7 @@ class Server implements IServer {
 
     if (rout) {
       Object.assign(req, { params: {} });
+      // eslint-disable-next-line consistent-return
       return rout;
     }
 
@@ -94,15 +86,15 @@ class Server implements IServer {
     }
 
     const parsedUrl = this.routes.find((v) => {
-      const splittedRoute = this.splitter(v.route);
+      const splittedRoute = Server.splitter(v.route);
 
       if (splittedRoute.length !== url.length) {
         return false;
       }
 
-      let paramIds: Array<number> = [];
-      splittedRoute.forEach((v, i) => {
-        if (v.match(pattern)) {
+      const paramIds: Array<number> = [];
+      splittedRoute.forEach((val: string, i: number) => {
+        if (val.match(pattern)) {
           paramIds.push(i);
         }
       });
@@ -111,8 +103,8 @@ class Server implements IServer {
         return false;
       }
 
-      const routeWithoutParams = this.removeArrayElement(splittedRoute, paramIds);
-      const urlWithoutParams = this.removeArrayElement(url, paramIds);
+      const routeWithoutParams = Server.removeArrayElement(splittedRoute, paramIds);
+      const urlWithoutParams = Server.removeArrayElement(url, paramIds);
 
       if (!isEqual(routeWithoutParams, urlWithoutParams)) {
         return false;
@@ -125,46 +117,50 @@ class Server implements IServer {
       return;
     }
 
-    const splittedUrl = this.splitter(parsedUrl.route);
+    const splittedUrl = Server.splitter(parsedUrl.route);
 
     Object.assign(req, {
-      params: this.setRequestParams(
+      params: Server.setRequestParams(
         splittedUrl.filter((v, i) => v !== url[i]),
-        url.filter((v, i) => v !== splittedUrl[i])
+        url.filter((v, i) => v !== splittedUrl[i]),
       ),
     });
 
+    // eslint-disable-next-line consistent-return
     return parsedUrl;
   }
 
-  private parseReqUrl(reqUrl: string | undefined): Array<string> | undefined {
+  private static parseReqUrl(reqUrl: string | undefined): Array<string> | undefined {
     if (!reqUrl) return;
 
+    // eslint-disable-next-line consistent-return
     return parse(reqUrl)
       .pathname?.split('/')
       .filter((v) => !!v);
   }
 
-  private splitter(str: string): Array<string> {
+  private static splitter(str: string): Array<string> {
     return str.split('/').filter((val) => (val !== undefined ? val : false));
   }
 
-  private removeArrayElement(arr: Array<any>, ids: Array<number>): Array<any> {
+  private static removeArrayElement(arr: Array<any>, ids: Array<number>): Array<any> {
     return arr.filter((v, i) => !ids.find((id) => id === i));
   }
 
-  private setRequestParams(
+  private static setRequestParams(
     names: Array<string>,
-    values: Array<string>
+    values: Array<string>,
   ): { [name: string]: string } {
     const obj: { [name: string]: string } = {};
 
-    names.forEach((v, i) => (obj[v.replace(':', '')] = values[i]));
+    names.forEach((v, i) => {
+      obj[v.replace(':', '')] = values[i];
+    });
 
     return obj;
   }
 
-  private setupHandlers(req: IncomingMessage, res: ServerResponse): void {
+  private static setupHandlers(req: IncomingMessage): void {
     const requestStart = Date.now();
 
     req.on('error', (err: Error) => {

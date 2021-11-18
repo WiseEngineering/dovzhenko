@@ -18,6 +18,7 @@
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-airbnb-typescript": "^14.0.1",
+    "eslint-config-airbnb-typescript-prettier": "^4.2.0",
     "eslint-plugin-import": "^2.25.2",
     "nodemon": "^2.0.14",
     "prettier": "2.4.1"
