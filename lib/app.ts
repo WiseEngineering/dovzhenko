@@ -1,15 +1,15 @@
 import { IncomingMessage, ServerResponse } from 'http';
 
-import { Route } from './server';
+import { IRequest, Route } from './server';
 
 export interface IApp {
   routes: Array<Route>;
-  append: (event: string, cb: (req: IncomingMessage, res: ServerResponse) => void) => void;
+  append: (event: string, cb: (req: IncomingMessage, res: ServerResponse) => Promise<void>) => void;
 }
 class App implements IApp {
   public routes!: Array<Route>;
 
-  public append(eventName: string, cb: (req: IncomingMessage, res: ServerResponse) => void) {
+  public append(eventName: string, cb: (req: IRequest, res: ServerResponse) => Promise<void>) {
     const event = eventName;
     this.setupRoute({ route: eventName, cb });
 

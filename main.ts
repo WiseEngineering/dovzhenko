@@ -1,71 +1,67 @@
-import { IncomingMessage, ServerResponse } from 'http';
+import { ServerResponse } from 'http';
 
-import Server from './lib/server';
+import Server, { IRequest } from './lib/server';
 import Channel from './lib/chanel';
 
 const server = new Server();
-const channel = new Channel();
 const app = server.app;
 
 server.createServer();
 
-const bidEvent = {};
+const bidEvent: { [name: string]: any } = {};
 
-const bidEventSubscribe = async (req: IncomingMessage, res: ServerResponse) => {
-  console.log(req.url);
-  console.log(222);
+app.append('/publish', async (req: IRequest, res: ServerResponse) => {
+  const body = req.body;
+
+  if (!body.slug && !body.message && !body.event) {
+    res.writeHead(400, 'body does not contains required data');
+    res.end();
+  }
+
+  const { slug, message, event } = body;
+
+  if (slug in bidEvent) {
+    bidEvent[slug].publish(message, event);
+    console.log(bidEvent[slug]);
+  } else {
+    res.writeHead(400, 'unknown event type');
+    res.end();
+  }
+
+  res.writeHead(200);
+  res.end();
+});
+
+app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
+  const bid = req.params.slug;
+
+  if (!(bid in bidEvent)) {
+    bidEvent[bid] = new Channel({ maxStreamDuration: 15000, pingInterval: 0 });
+  }
+
+  bidEvent[bid].subscribe(req, res);
+});
+
+app.append('/status', async (req, res) => {
+  res.write(JSON.stringify(bidEvent));
+  res.writeHead(200);
+  res.end();
+});
+
+app.append('/list/:slug', async (req, res) => {
+  const { slug } = req.params;
+  console.log(slug);
+
+  if (!slug) {
+    res.writeHead(400, 'no slug provided');
+    res.end();
+  }
+
+  if (slug in bidEvent) {
+    res.write(JSON.stringify(bidEvent[slug].listClients()));
+  }
 
   res.end();
-};
-
-app.append('some/:some', bidEventSubscribe);
-app.append('/some', bidEventSubscribe);
+});
 
 server.listen(3300);
-
-// setInterval(() => channel.publish('hello world', 'hello'), 1000);
-
-// const getUserData = async () => {
-//   const response = await axios.get('https://randomuser.me/api');
-
-//   return response.data.results[0];
-// };
-
-// const getUsers = async (req: IncomingMessage, res: ServerResponse) => {
-//   let i = 1;
-
-//   const timer = setInterval(async () => {
-//     if (i > 10) {
-//       clearInterval(timer);
-//       console.log('10 users has been sent.');
-//       channel.unsubscribe({ req, res, events: ['getUsers'] });
-//       return;
-//     }
-
-//     const data = await getUserData();
-
-//     channel.publish(JSON.stringify(data), 'getUsers');
-
-//     console.log('User data has been sent.');
-
-//     i++;
-//   }, 2000);
-
-//   channel.subscribe(req, res, ['getUsers']);
-
-//   req.on('close', () => {
-//     clearInterval(timer);
-//     channel.unsubscribe({ req, res, events: ['getUsers'] });
-//   });
-// };
-
-// const helloWorld = (req: IncomingMessage, res: ServerResponse) => {
-//   channel.subscribe(req, res, ['hello']);
-// };
-
-// const setBidEvents = (req: IncomingMessage, res: ServerResponse): void => {
-
-// }
-
-// app.append('hello', helloWorld);
-// app.append('getUsers', getUsers);

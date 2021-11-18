@@ -1,15 +1,21 @@
 import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } from 'http';
 import { parse } from 'url';
+import { parse as querystring } from 'querystring';
 
 import App, { IApp } from './app';
 import log from './log';
 
-export type CbFunctionType = (req: IncomingMessage, res: ServerResponse) => void;
+export type CbFunctionType = (req: IRequest, res: ServerResponse) => void;
 export type Route = { route: string; cb: CbFunctionType };
 export interface IServer {
   createServer: () => void;
   listen: <T = number>(port?: T) => void;
   app: IApp;
+}
+
+export interface IRequest extends IncomingMessage {
+  params: { [name: string]: string };
+  body: any;
 }
 
 class Server implements IServer {
@@ -22,7 +28,12 @@ class Server implements IServer {
     this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
       this.setupHandlers(req, res);
       this.setupRoutes();
-
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Request-Method', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+      if (req.headers.origin) {
+        res.setHeader('Access-Control-Allow-Headers', req.headers.origin!);
+      }
       const route = this.routeParams(this.parseReqUrl(req.url), req);
 
       if (!route) {
@@ -32,7 +43,8 @@ class Server implements IServer {
       }
 
       req.emit('connection');
-      await route?.cb(req, res);
+      await this.parseBody(req);
+      await route?.cb(req as IRequest, res);
     });
   }
 
@@ -43,6 +55,19 @@ class Server implements IServer {
 
     this.server.listen(port || 3000, () => {
       console.info('server is listened on port: ', port || 3000);
+    });
+  }
+
+  private async parseBody(req: IncomingMessage): Promise<void> {
+    let body: string = '';
+    req.on('data', (data: any) => {
+      body += data;
+
+      if (body.length > 1e6) {
+        req.destroy(new Error('body is too big'));
+      }
+
+      Object.assign(req, { body: body ? querystring(body) : {} });
     });
   }
 

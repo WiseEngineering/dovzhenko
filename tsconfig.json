@@ -4,7 +4,7 @@
     "module": "CommonJS",
     "skipLibCheck": true,
     "incremental": true,
-    "strict": true,
+    // "strict": true,
     "outDir": "./dist",
     "rootDir": "."
   }
