@@ -1,6 +1,7 @@
 import {
   Client, IChannel, IChannelOptions, IRequest, Message, IResponse,
 } from './types';
+import { hasEventMatch } from './utils';
 
 export default class Channel implements IChannel {
   public options: IChannelOptions;
@@ -68,7 +69,7 @@ export default class Channel implements IChannel {
     }
 
     [...this.clients]
-      .filter((c) => !eventName || Channel.hasEventMatch(c.events, eventName))
+      .filter((c) => !eventName || hasEventMatch(c.events, eventName))
       .forEach((c) => c.res.write(output));
 
     while (this.messages.length > this.options.historySize) {
@@ -107,7 +108,7 @@ export default class Channel implements IChannel {
 
     if (rewind) {
       this.messages
-        .filter((m) => Channel.hasEventMatch(client.events, m.eventName))
+        .filter((m) => hasEventMatch(client.events, m.eventName))
         .slice(0 - rewind)
         .forEach((m) => {
           body += m.output;
@@ -156,20 +157,5 @@ export default class Channel implements IChannel {
   private async unsubscribe(c: Client): Promise<void> {
     await c.res.end();
     this.clients.delete(c);
-  }
-
-  private static hasEventMatch(
-    subscriptionList: Array<any> | undefined,
-    eventName: string | undefined,
-  ): boolean {
-    if (!subscriptionList) return true;
-
-    if (!eventName && subscriptionList?.length) return true;
-
-    return (
-      subscriptionList.some(
-        (pat) => (pat instanceof RegExp ? pat.test(eventName!) : pat === eventName),
-      )
-    );
   }
 }

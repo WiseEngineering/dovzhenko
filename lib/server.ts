@@ -7,6 +7,7 @@ import { parse as querystring } from 'querystring';
 import App from './app';
 import log from './log';
 import { IRequest, IServer, Route } from './types';
+import { removeArrayElement, splitter } from './utils';
 
 const isEqual = require('lodash.isequal');
 
@@ -86,7 +87,7 @@ class Server implements IServer {
     }
 
     const parsedUrl = this.routes.find((v) => {
-      const splittedRoute = Server.splitter(v.route);
+      const splittedRoute = splitter(v.route);
 
       if (splittedRoute.length !== url.length) {
         return false;
@@ -103,8 +104,8 @@ class Server implements IServer {
         return false;
       }
 
-      const routeWithoutParams = Server.removeArrayElement(splittedRoute, paramIds);
-      const urlWithoutParams = Server.removeArrayElement(url, paramIds);
+      const routeWithoutParams = removeArrayElement(splittedRoute, paramIds);
+      const urlWithoutParams = removeArrayElement(url, paramIds);
 
       if (!isEqual(routeWithoutParams, urlWithoutParams)) {
         return false;
@@ -117,7 +118,7 @@ class Server implements IServer {
       return;
     }
 
-    const splittedUrl = Server.splitter(parsedUrl.route);
+    const splittedUrl = splitter(parsedUrl.route);
 
     Object.assign(req, {
       params: Server.setRequestParams(
@@ -137,14 +138,6 @@ class Server implements IServer {
     return parse(reqUrl)
       .pathname?.split('/')
       .filter((v) => !!v);
-  }
-
-  private static splitter(str: string): Array<string> {
-    return str.split('/').filter((val) => (val !== undefined ? val : false));
-  }
-
-  private static removeArrayElement(arr: Array<any>, ids: Array<number>): Array<any> {
-    return arr.filter((v, i) => !ids.find((id) => id === i));
   }
 
   private static setRequestParams(
