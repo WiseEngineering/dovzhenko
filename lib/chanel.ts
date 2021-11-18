@@ -145,10 +145,11 @@ export default class SSEChannel {
     this.clients.add(client);
 
     setTimeout(() => {
-      if (!client.res.finished) {
+      if (!client.res.writableEnded) {
         this.unsubscribe(client);
       }
     }, this.options.maxStreamDuration);
+
     client.res.on('close', () => this.unsubscribe(client));
     return client;
   }
