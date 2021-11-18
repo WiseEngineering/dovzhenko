@@ -70,9 +70,9 @@ export default class SSEChannel {
   public async publish(data?: any, eventName?: string): Promise<number | void> {
     if (!this.active) throw new Error('Channel closed');
 
-    let output;
+    let output: string;
+    let inputData: any = data;
     let id;
-    let inputData = data;
 
     if (!inputData && !eventName) {
       if (!this.clients.size) return;
@@ -84,7 +84,7 @@ export default class SSEChannel {
       inputData = inputData
         ? inputData
             .split(/[\r\n]+/)
-            .map((str) => 'data: ' + str)
+            .map((str: string) => 'data: ' + str)
             .join('\n')
         : '';
 
@@ -156,7 +156,7 @@ export default class SSEChannel {
     return client;
   }
 
-  public async unsubscribe(c): Promise<void> {
+  public async unsubscribe(c: Client): Promise<void> {
     await c.res.end();
     this.clients.delete(c);
   }
@@ -172,7 +172,7 @@ export default class SSEChannel {
   public listClients(): { [name: string]: number } {
     const rollupByIP: { [name: string]: number } = {};
     this.clients.forEach((c) => {
-      const ip = c.req.socket.remoteAddress;
+      const ip = c.req.socket.remoteAddress!;
       if (!(ip in rollupByIP)) {
         rollupByIP[ip] = 0;
       }
@@ -185,11 +185,16 @@ export default class SSEChannel {
     return this.clients.size;
   }
 
-  private hasEventMatch(subscriptionList: Array<any>, eventName: string): boolean {
+  private hasEventMatch(
+    subscriptionList: Array<any> | undefined,
+    eventName: string | undefined
+  ): boolean {
+    if (!eventName && subscriptionList?.length) return true;
+
     return (
       !subscriptionList ||
       subscriptionList.some((pat) =>
-        pat instanceof RegExp ? pat.test(eventName) : pat === eventName
+        pat instanceof RegExp ? pat.test(eventName!) : pat === eventName
       )
     );
   }
