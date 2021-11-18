@@ -26,7 +26,7 @@ export interface IChannel {
   options: IChannelOptions;
   clients: Set<Client>;
   messages: Array<Message>;
-  publish: (data: any, eventName: string) => number | undefined;
+  publish: (data?: any, eventName?: string) => number | undefined;
   subscribe: (req: IncomingMessage, res: ServerResponse, events?: Array<string>) => Client;
   unsubscribe: (client: Client) => void;
   close: () => void;
@@ -67,18 +67,22 @@ export default class SSEChannel {
     }
   }
 
-  public publish(data?: any, eventName?: string) {
+  public async publish(data?: any, eventName?: string): Promise<number | void> {
     if (!this.active) throw new Error('Channel closed');
+
     let output;
     let id;
-    if (!data && !eventName) {
-      if (!this.clients.size) return; // No need to create a ping entry if there are no clients connected
+    let inputData = data;
+
+    if (!inputData && !eventName) {
+      if (!this.clients.size) return;
       output = 'data: \n\n';
     } else {
       id = this.nextID++;
-      if (typeof data === 'object') data = JSON.stringify(data);
-      data = data
-        ? data
+      if (typeof inputData === 'object') inputData = JSON.stringify(inputData);
+
+      inputData = inputData
+        ? inputData
             .split(/[\r\n]+/)
             .map((str) => 'data: ' + str)
             .join('\n')
@@ -88,7 +92,7 @@ export default class SSEChannel {
         id +
         '\n' +
         (eventName ? 'event: ' + eventName + '\n' : '') +
-        (data || 'data: ') +
+        (inputData || 'data: ') +
         '\n\n';
       this.messages.push({ id, eventName, output });
     }
