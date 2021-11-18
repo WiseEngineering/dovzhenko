@@ -28,7 +28,6 @@ export interface IChannel {
   messages: Array<Message>;
   publish: (data?: any, eventName?: string) => Promise<number | void>;
   subscribe: (req: IRequest, res: ServerResponse, events?: Array<string>) => Promise<Client>;
-  unsubscribe: (client: Client) => Promise<void>;
   close: () => Promise<void>;
   listClients: () => { [name: string]: any };
   getSubscriberCount: () => number;
@@ -159,11 +158,6 @@ export default class Channel implements IChannel {
     return client;
   }
 
-  public async unsubscribe(c: Client): Promise<void> {
-    await c.res.end();
-    this.clients.delete(c);
-  }
-
   public async close(): Promise<void> {
     Promise.all([...this.clients].map(async (c) => await c.res.end()));
     this.clients = new Set();
@@ -186,6 +180,11 @@ export default class Channel implements IChannel {
 
   public getSubscriberCount(): number {
     return this.clients.size;
+  }
+
+  private async unsubscribe(c: Client): Promise<void> {
+    await c.res.end();
+    this.clients.delete(c);
   }
 
   private hasEventMatch(

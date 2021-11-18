@@ -43,7 +43,6 @@ app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
 
 app.append('/status', async (req: IRequest, res: ServerResponse) => {
   res.write(JSON.stringify(bidEvent));
-  res.writeHead(200);
   res.end();
 });
 
@@ -62,24 +61,8 @@ app.append('/list/:slug', async (req, res) => {
   res.end();
 });
 
-app.append('unsubscribe/:slug', async (req: IRequest, res: ServerResponse) => {
-  const { slug } = req.body;
-
-  if (!slug) {
-    res.writeHead(400, 'slug not provided');
-    res.end();
-  }
-
-  if (slug in bidEvent) {
-    res.writeHead(200, 'Client unsubscribed');
-    bidEvent[slug].unsubscribe({ req, res });
-  } else {
-    res.end();
-  }
-});
-
 app.append('close/:slug', async (req: IRequest, res: ServerResponse) => {
-  const { slug } = req.body;
+  const { slug } = req.params;
 
   if (!slug) {
     res.writeHead(400, 'slug not provided');

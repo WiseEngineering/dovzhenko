@@ -2,6 +2,8 @@ import { createServer, IncomingMessage, ServerResponse, Server as HttpServer } f
 import { parse } from 'url';
 import { parse as querystring } from 'querystring';
 
+const isEqual = require('lodash.isequal');
+
 import App, { IApp } from './app';
 import log from './log';
 
@@ -91,20 +93,33 @@ class Server implements IServer {
       return;
     }
 
-    const parsedUrl = this.routes.filter((v) => {
-      let equals: boolean = true;
+    const parsedUrl = this.routes.find((v) => {
       const splittedRoute = this.splitter(v.route);
 
       if (splittedRoute.length !== url.length) {
-        equals = false;
+        return false;
       }
 
-      if (!splittedRoute.filter((v) => v.match(pattern))) {
-        equals = false;
+      let paramIds: Array<number> = [];
+      splittedRoute.forEach((v, i) => {
+        if (v.match(pattern)) {
+          paramIds.push(i);
+        }
+      });
+
+      if (!paramIds?.length) {
+        return false;
       }
 
-      return equals ? v : false;
-    })[0];
+      const routeWithoutParams = this.removeArrayElement(splittedRoute, paramIds);
+      const urlWithoutParams = this.removeArrayElement(url, paramIds);
+
+      if (!isEqual(routeWithoutParams, urlWithoutParams)) {
+        return false;
+      }
+
+      return v;
+    });
 
     if (!parsedUrl) {
       return;
@@ -134,16 +149,17 @@ class Server implements IServer {
     return str.split('/').filter((val) => (val !== undefined ? val : false));
   }
 
+  private removeArrayElement(arr: Array<any>, ids: Array<number>): Array<any> {
+    return arr.filter((v, i) => !ids.find((id) => id === i));
+  }
+
   private setRequestParams(
     names: Array<string>,
     values: Array<string>
   ): { [name: string]: string } {
     const obj: { [name: string]: string } = {};
-    console.log(names);
-    console.log(values);
 
     names.forEach((v, i) => (obj[v.replace(':', '')] = values[i]));
-    console.log(obj);
 
     return obj;
   }
