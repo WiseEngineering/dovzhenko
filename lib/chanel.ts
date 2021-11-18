@@ -28,8 +28,8 @@ export interface IChannel {
   messages: Array<Message>;
   publish: (data?: any, eventName?: string) => Promise<number | void>;
   subscribe: (req: IRequest, res: ServerResponse, events?: Array<string>) => Promise<Client>;
-  unsubscribe: (client: Client) => void;
-  close: () => void;
+  unsubscribe: (client: Client) => Promise<void>;
+  close: () => Promise<void>;
   listClients: () => { [name: string]: any };
   getSubscriberCount: () => number;
 }

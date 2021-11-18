@@ -5,6 +5,8 @@ import { parse as querystring } from 'querystring';
 import App, { IApp } from './app';
 import log from './log';
 
+const isEqual = require('lodash.isequal');
+
 export type CbFunctionType = (req: IRequest, res: ServerResponse) => void;
 export type Route = { route: string; cb: CbFunctionType };
 export interface IServer {
@@ -91,7 +93,7 @@ class Server implements IServer {
       return;
     }
 
-    const parsedUrl = this.routes.find((v) => this.splitter(v.route).length === url.length);
+    const parsedUrl = this.routes.find((v) => isEqual(this.splitter(v.route), url));
 
     if (!parsedUrl) {
       return;
@@ -118,7 +120,10 @@ class Server implements IServer {
   }
 
   private splitter(str: string): Array<string> {
-    return str.split('/').filter((val) => (val !== undefined ? val : false));
+    return str
+      .split('/')
+      .filter((val) => (val !== undefined ? val : false))
+      .map((v) => v.replace(':', ''));
   }
 
   private setRequestParams(

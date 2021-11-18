@@ -21,7 +21,7 @@ app.append('/publish', async (req: IRequest, res: ServerResponse) => {
   const { slug, message, event } = body;
 
   if (slug in bidEvent) {
-    bidEvent[slug].publish(message, event);
+    await bidEvent[slug].publish(message, event);
   } else {
     res.writeHead(400, 'unknown event type');
     res.end();
