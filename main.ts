@@ -22,7 +22,6 @@ app.append('/publish', async (req: IRequest, res: ServerResponse) => {
 
   if (slug in bidEvent) {
     bidEvent[slug].publish(message, event);
-    console.log(bidEvent[slug]);
   } else {
     res.writeHead(400, 'unknown event type');
     res.end();
@@ -36,7 +35,7 @@ app.append('/bid/:slug', async (req: IRequest, res: ServerResponse) => {
   const bid = req.params.slug;
 
   if (!(bid in bidEvent)) {
-    bidEvent[bid] = new Channel({ maxStreamDuration: 15000, pingInterval: 0 });
+    bidEvent[bid] = new Channel({ maxStreamDuration: 0, pingInterval: 0 });
   }
 
   await bidEvent[bid].subscribe(req, res);
