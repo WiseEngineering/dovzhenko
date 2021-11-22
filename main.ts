@@ -28,14 +28,14 @@ app.append('/subscribe', async (req: IRequest, res: IResponse) => {
 });
 
 app.append('/publish', async (req: IRequest, res: IResponse) => {
-  const { slug, data, event } = req?.body;
+  const { data } = req?.body;
 
-  if (!slug && !message && !event) {
+  if (!data) {
     res.writeHead(400, 'body does not contains required data');
     res.end();
   }
 
-  await message.publish({ slug, data, event });
+  await message.publish(JSON.stringify({ data }));
 
   res.writeHead(200);
   res.end();
@@ -44,7 +44,7 @@ app.append('/publish', async (req: IRequest, res: IResponse) => {
 app.append('/getMessage', async (req: IRequest, res: IResponse) => {
   console.log(req.body);
 
-  res.write(200);
+  res.write(JSON.stringify(req.body));
   res.end();
 });
 
