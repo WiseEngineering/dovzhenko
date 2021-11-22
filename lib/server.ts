@@ -5,7 +5,7 @@ import { parse } from 'url';
 import { parse as querystring } from 'querystring';
 
 import App from './app';
-import log from './log';
+import { log } from './log';
 import { IRequest, IServer, Route } from './types';
 import { removeArrayElement, splitter } from './utils';
 

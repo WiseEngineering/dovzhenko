@@ -1,11 +1,12 @@
 import { IncomingMessage } from 'http';
+import { log as consoleLog, error as errorLog } from 'console';
 
-const log = (req: IncomingMessage, requestStart: number, message?: string): void => {
+export const log = (req: IncomingMessage, requestStart: number, message?: string): void => {
   const {
     httpVersion, method, socket, url,
   } = req;
   const { remoteAddress, remoteFamily } = socket;
-  console.log(
+  consoleLog(
     JSON.stringify(
       {
         timestamp: new Date(),
@@ -23,4 +24,6 @@ const log = (req: IncomingMessage, requestStart: number, message?: string): void
   );
 };
 
-export default log;
+export const error = (message?: string): void => {
+  errorLog(message);
+};

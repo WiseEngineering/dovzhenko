@@ -1,75 +1,50 @@
 import Server from './lib/server';
-import Channel from './lib/chanel';
-import { IChannel, IRequest, IResponse } from './lib/types';
+import { IRequest, IResponse } from './lib/types';
+import getMessageTransport from './lib/messageQueu/messageTransport';
 
 const server = new Server();
 const { app } = server;
 
+const message = getMessageTransport('aws', {
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
+  region: process.env.AWS_REGION,
+  topic: process.env.AWS_TOPIC,
+});
+
 server.createServer();
 
-const bidEvent: { [name: string]: IChannel } = {};
+app.append('/subscribe', async (req: IRequest, res: IResponse) => {
+  const { endpoint, protocol } = req?.body;
+
+  await message.subscribe({
+    topic: process.env.AWS_TOPIC,
+    endpoint,
+    protocol,
+  });
+
+  res.write('subscribed');
+  res.end();
+});
 
 app.append('/publish', async (req: IRequest, res: IResponse) => {
-  const { slug, message, event } = req?.body;
+  const { slug, data, event } = req?.body;
 
   if (!slug && !message && !event) {
     res.writeHead(400, 'body does not contains required data');
     res.end();
   }
 
-  if (slug in bidEvent) {
-    await bidEvent[slug].publish(message, event);
-  } else {
-    res.writeHead(400, 'unknown event type');
-    res.end();
-  }
+  await message.publish({ slug, data, event });
 
   res.writeHead(200);
   res.end();
 });
 
-app.append('/bid/:slug', async (req: IRequest, res: IResponse) => {
-  const bid = req.params.slug;
+app.append('/getMessage', async (req: IRequest, res: IResponse) => {
+  console.log(req.body);
 
-  if (!(bid in bidEvent)) {
-    bidEvent[bid] = new Channel({ maxStreamDuration: 0, pingInterval: 0 });
-  }
-
-  await bidEvent[bid].subscribe(req, res);
-});
-
-app.append('/status', async (req: IRequest, res: IResponse) => {
-  res.write(JSON.stringify(bidEvent));
-  res.end();
-});
-
-app.append('/list/:slug', async (req, res) => {
-  const { slug } = req.params;
-
-  if (!slug) {
-    res.writeHead(400, 'no slug provided');
-    res.end();
-  }
-
-  if (slug in bidEvent) {
-    res.write(JSON.stringify(bidEvent[slug].listClients()));
-  }
-
-  res.end();
-});
-
-app.append('close/:slug', async (req: IRequest, res: IResponse) => {
-  const { slug } = req.params;
-
-  if (!slug) {
-    res.writeHead(400, 'slug not provided');
-    res.end();
-  }
-
-  if (slug in bidEvent) {
-    res.writeHead(200, 'Connection closed');
-    bidEvent[slug].close();
-  }
+  res.write(200);
   res.end();
 });
 
