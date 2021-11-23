@@ -6,6 +6,7 @@
     "incremental": true,
     "strict": true,
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "esModuleInterop": true
   }
 }

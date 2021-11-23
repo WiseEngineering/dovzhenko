@@ -2,13 +2,17 @@ import {
   createServer, IncomingMessage, ServerResponse, Server as HttpServer,
 } from 'http';
 import { parse } from 'url';
-import { parse as querystring } from 'querystring';
 
 import App from './app';
-import log from './log';
-import { IRequest, IServer, Route } from './types';
+import { log } from './log';
+import {
+  IRequest, IServer, Route, JSONType, FormType, TextType,
+} from './types';
 import { removeArrayElement, splitter } from './utils';
 
+const json = require('body/json');
+const form = require('body/form');
+const text = require('body');
 const isEqual = require('lodash.isequal');
 
 class Server implements IServer {
@@ -20,14 +24,10 @@ class Server implements IServer {
 
   public createServer() {
     this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      Server.setupHandlers(req);
+      Server.setupHandlers(req, res);
+      Server.enableCors(req, res);
       this.setupRoutes();
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Request-Method', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
-      if (req.headers.origin) {
-        res.setHeader('Access-Control-Allow-Headers', req.headers.origin!);
-      }
+
       const route = this.routeParams(Server.parseReqUrl(req.url), req);
 
       if (!route) {
@@ -35,10 +35,11 @@ class Server implements IServer {
         res.end();
         return;
       }
-
       req.emit('connection');
-      await Server.parseBody(req);
-      route?.cb(req as unknown as IRequest, res);
+
+      await Server.parseBody(req, res).then(() => {
+        route?.cb(req as unknown as IRequest, res);
+      });
     });
   }
 
@@ -52,17 +53,36 @@ class Server implements IServer {
     });
   }
 
-  private static async parseBody(req: IncomingMessage): Promise<void> {
-    let body: string = '';
-    req.on('data', (data: any) => {
-      body += data;
+  private static async parseBody(req: IncomingMessage, res: ServerResponse) {
+    return new Promise((resolve) => {
+      const contentType = req.headers['content-type'];
 
-      if (body.length > 1e6) {
-        req.destroy(new Error('body is too big'));
+      const handler = async (e: Error, data: any) => {
+        if (e) {
+          res.emit('error');
+        }
+
+        Object.assign(req, { body: contentType === TextType ? JSON.parse(data) : data || {} });
+        resolve(data);
+      };
+
+      if (contentType === JSONType) {
+        json(req, res, handler);
+      } else if (contentType === FormType) {
+        form(req, res, handler);
+      } else {
+        text(req, res, handler);
       }
-
-      Object.assign(req, { body: body ? querystring(body) : {} });
     });
+  }
+
+  private static enableCors(req: IncomingMessage, res: ServerResponse) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Request-Method', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Headers', req.headers.origin!);
+    }
   }
 
   private setupRoutes(): void {
@@ -153,11 +173,12 @@ class Server implements IServer {
     return obj;
   }
 
-  private static setupHandlers(req: IncomingMessage): void {
+  private static setupHandlers(req: IncomingMessage, res: ServerResponse): void {
     const requestStart = Date.now();
 
-    req.on('error', (err: Error) => {
-      log(req, requestStart, err.message);
+    req.on('error', () => {
+      res.writeHead(500, 'error occurs');
+      res.end();
     });
     req.on('finish', () => {
       log(req, requestStart, 'Request finished');
