@@ -59,7 +59,7 @@ app.append('/getMessage', async (req: IRequest, res: IResponse) => {
   }
 
   if (body?.Type === 'Notification') {
-
+    console.log(body.Data);
   }
   res.write('ok');
   res.end();
