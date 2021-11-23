@@ -1,7 +1,7 @@
 import AWSTransport from './aws';
 import MessageTransport from './base';
 
-import { AWSInitializationOptions, MessageTransports } from './types';
+import { AWSInitializationOptions, MessageTransports } from '../types';
 
 function getMessageTransport(
   name: MessageTransports,

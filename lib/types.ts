@@ -2,6 +2,10 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 export type CbFunctionType = (req: IRequest, res: ServerResponse) => void;
 export type Route = { route: string; cb: CbFunctionType };
+export const JSONType = 'application/json';
+export const FormType = 'application/x-www-form-urlencoded';
+export const TextType = 'text/plain';
+
 export interface IServer {
   createServer: () => void;
   listen: <T = number>(port?: T) => void;
@@ -11,6 +15,7 @@ export interface IServer {
 export interface IRequest extends IncomingMessage {
   params: { [name: string]: string };
   body: any;
+  [name: string]: any
 }
 
 export interface IApp {
@@ -50,4 +55,25 @@ export interface IChannel {
   getSubscriberCount: () => number;
 }
 
-export interface IResponse extends ServerResponse {}
+export interface IResponse extends ServerResponse {
+  [name: string]: any
+}
+
+export type MessageTransports = 'aws';
+export interface IMessageTransport {
+  subscribe: (options: any) => Promise<void>
+  publishMessage: (message: any, options?: string) => Promise<void>
+}
+
+export interface AWSInitializationOptions {
+  accessKeyId: string,
+  secretAccessKey: string,
+  region: string,
+  topic: string
+}
+
+export interface AWSSubscribe {
+  topic: string;
+  endpoint: string;
+  protocol: 'http' | 'https'
+}

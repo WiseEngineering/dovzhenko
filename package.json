@@ -28,6 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
     "aws-sdk": "^2.1033.0",
+    "body": "^5.1.0",
     "dotenv": "^10.0.0",
     "lodash.isequal": "^4.5.0",
     "ts-node": "^10.4.0",

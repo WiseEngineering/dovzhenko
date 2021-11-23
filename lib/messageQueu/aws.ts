@@ -5,7 +5,7 @@ import { PublishInput, SubscribeInput } from 'aws-sdk/clients/sns';
 
 import MessageTransport from './base';
 import { error } from '../log';
-import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from './types';
+import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from '../types';
 
 class AWSMessageTransport implements IMessageTransport {
   private client: SNS;
@@ -14,7 +14,10 @@ class AWSMessageTransport implements IMessageTransport {
 
   constructor({ topic, ...credentials }: AWSInitializationOptions) {
     AWS.config.update(credentials);
-    this.options = { topic, ...credentials };
+    this.options = {
+      topic,
+      ...credentials,
+    };
     this.client = new AWS.SNS();
   }
 

@@ -1,4 +1,4 @@
-import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from './types';
+import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from '../types';
 
 abstract class MessageTransport {
   public abstract options: any;

@@ -1,3 +1,4 @@
+import { request } from 'http';
 import Server from './lib/server';
 import { IRequest, IResponse } from './lib/types';
 import getMessageTransport from './lib/messageQueu/messageTransport';
@@ -15,7 +16,14 @@ const message = getMessageTransport('aws', {
 server.createServer();
 
 app.append('/subscribe', async (req: IRequest, res: IResponse) => {
-  const { endpoint, protocol } = req?.body;
+  const { body } = req;
+
+  if (!body?.endpoint || !body.protocol) {
+    res.write('there are no required data');
+    res.end();
+  }
+
+  const { endpoint, protocol } = body;
 
   await message.subscribe({
     topic: process.env.AWS_TOPIC,
@@ -42,9 +50,18 @@ app.append('/publish', async (req: IRequest, res: IResponse) => {
 });
 
 app.append('/getMessage', async (req: IRequest, res: IResponse) => {
-  console.log(req.body);
+  const { body } = req;
+  console.log(body);
 
-  res.write(JSON.stringify(req.body));
+  if (body?.Type === 'SubscriptionConfirmation') {
+    const url = body.SubscribeURL;
+    await request(url);
+  }
+
+  if (body?.Type === 'Notification') {
+
+  }
+  res.write('ok');
   res.end();
 });
 
