@@ -2,8 +2,8 @@ import axios from 'axios';
 
 import Server from './lib/server';
 import { IRequest, IResponse, IChannel } from './lib/types';
-import getMessageTransport from './lib/messageQueu/messageTransport';
-import Channel from './lib/chanel';
+import getMessageTransport from './lib/messageQueue/messageQueue';
+import Channel from './lib/channel';
 
 const server = new Server();
 server.createServer();

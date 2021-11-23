@@ -1,5 +1,5 @@
 import Server from '../lib/server';
-import Channel from '../lib/chanel';
+import Channel from '../lib/channel';
 import { IChannel, IRequest, IResponse } from '../lib/types';
 
 const server = new Server();
