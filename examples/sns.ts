@@ -1,7 +1,7 @@
 import { request } from 'http';
-import Server from './lib/server';
-import { IRequest, IResponse } from './lib/types';
-import getMessageTransport from './lib/messageQueu/messageTransport';
+import Server from '../lib/server';
+import { IRequest, IResponse } from '../lib/types';
+import getMessageTransport from '../lib/messageQueu/messageTransport';
 
 const server = new Server();
 const { app } = server;
