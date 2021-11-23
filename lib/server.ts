@@ -6,7 +6,7 @@ import { parse } from 'url';
 import App from './app';
 import { log } from './log';
 import {
-  IRequest, IServer, Route, JSONType, FormType,
+  IRequest, IServer, Route, JSONType, FormType, TextType,
 } from './types';
 import { removeArrayElement, splitter } from './utils';
 
@@ -25,6 +25,7 @@ class Server implements IServer {
   public createServer() {
     this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
       Server.setupHandlers(req, res);
+      Server.enableCors(req, res);
       this.setupRoutes();
 
       const route = this.routeParams(Server.parseReqUrl(req.url), req);
@@ -35,8 +36,6 @@ class Server implements IServer {
         return;
       }
       req.emit('connection');
-
-      // await Server.parseBody(req, res, route?.cb);
 
       await Server.parseBody(req, res).then(() => {
         route?.cb(req as unknown as IRequest, res);
@@ -63,7 +62,7 @@ class Server implements IServer {
           res.emit('error');
         }
 
-        Object.assign(req, { body: data || {} });
+        Object.assign(req, { body: contentType === TextType ? JSON.parse(data) : data || {} });
         resolve(data);
       };
 
@@ -75,6 +74,15 @@ class Server implements IServer {
         text(req, res, handler);
       }
     });
+  }
+
+  private static enableCors(req: IncomingMessage, res: ServerResponse) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Request-Method', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Headers', req.headers.origin!);
+    }
   }
 
   private setupRoutes(): void {

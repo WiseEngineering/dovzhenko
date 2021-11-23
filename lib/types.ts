@@ -4,7 +4,7 @@ export type CbFunctionType = (req: IRequest, res: ServerResponse) => void;
 export type Route = { route: string; cb: CbFunctionType };
 export const JSONType = 'application/json';
 export const FormType = 'application/x-www-form-urlencoded';
-export const TextType = 'text/plain';
+export const TextType = 'text/plain; charset=UTF-8';
 
 export interface IServer {
   createServer: () => void;

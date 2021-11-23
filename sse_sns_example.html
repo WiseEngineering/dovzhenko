@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscriber</title>
+  </head>
+
+  <body>
+
+    <h1>Subscriber</h1>
+
+    <fieldset>
+      <p>
+        <label>Server:</label>
+        <input type="text" id="server" placeholder="server" value="http://localhost:3300">
+      </p>
+
+      <p>
+        <label>Slug:</label>
+        <input type="text" id="slug" placeholder="slug">
+      </p>
+
+      <p>
+        <label>Event:</label>
+        <input type="text" id="event" placeholder="event">
+      </p>
+
+      <p>
+        <button type="button" id="button">Subscribe to topic</button>
+      </p>
+    </fieldset>
+
+    <script>
+
+      const button = document.querySelector('#button');
+      const server = document.querySelector('#server');
+      const bid_slug = document.querySelector('#slug');
+      const event = document.querySelector('#event');
+
+      button.addEventListener('click', async (evt) => {
+
+        let es = new EventSource(`${server.value}/bid/${bid_slug.value}`);
+
+        es.addEventListener(event.value, function (evt) {
+          console.log(`incoming message`, JSON.parse(evt.data));
+        });
+
+        es.addEventListener('open', function (evt) {
+          console.log('connected', evt);
+        });
+
+        es.addEventListener('error', function (evt) {
+          console.log('error', evt);
+        });
+
+      });
+
+    </script>
+
+  </body>
+
+</html>
