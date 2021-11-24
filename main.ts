@@ -10,6 +10,7 @@ server.createServer();
 
 const { app } = server;
 const bidEvent: { [name: string]: IChannel } = {};
+
 const message = getMessageTransport('aws', {
   accessKeyId: process.env.AWS_ACCESS_KEY,
   secretAccessKey: process.env.AWS_SECRET_KEY,
@@ -21,7 +22,7 @@ app.append('/subscribe', async (req: IRequest, res: IResponse) => {
   const { body } = req;
 
   if (!body?.endpoint || !body.protocol) {
-    res.write('there are no required data');
+    res.write('No required data provided');
     res.end();
   }
 
@@ -34,25 +35,6 @@ app.append('/subscribe', async (req: IRequest, res: IResponse) => {
   });
 
   res.write('subscribed');
-  res.end();
-});
-
-app.append('/publish', async (req: IRequest, res: IResponse) => {
-  const { slug, data, event } = req?.body;
-
-  if (!slug && !data && !event) {
-    res.writeHead(400, 'body does not contains required data');
-    res.end();
-  }
-
-  if (slug in bidEvent) {
-    await message.publish(JSON.stringify({ data, slug, event }));
-  } else {
-    res.writeHead(400, 'unknown event type');
-    res.end();
-  }
-
-  res.writeHead(200);
   res.end();
 });
 
@@ -83,8 +65,8 @@ app.append('/bid/:slug', async (req: IRequest, res: IResponse) => {
   }
 
   if (body?.Type === 'Notification') {
-    const { data, event } = JSON.parse(body?.Message);
-    await bidEvent[slug].publish({ data }, event);
+    const { payload, event } = JSON.parse(body?.Message);
+    await bidEvent[slug].publish({ payload }, event);
   }
 
   if (!body?.Type) {
