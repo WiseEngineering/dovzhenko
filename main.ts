@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { get } from 'https';
 
 import Server from './lib/server';
 import { IRequest, IResponse, IChannel } from './lib/types';
@@ -50,10 +50,11 @@ app.append('/bid/:slug', async (req: IRequest, res: IResponse) => {
     const promise = new Promise((resolve, reject) => {
       const url = body.SubscribeURL;
 
-      axios.get(url).then((response) => {
-        if (response.status === 200) {
+      get(url, (response) => {
+        if (response.statusCode === 200) {
           return resolve('');
         }
+
         return reject();
       });
     });

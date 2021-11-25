@@ -22,18 +22,17 @@
     "eslint-config-airbnb-typescript-prettier": "^4.2.0",
     "eslint-plugin-import": "^2.25.2",
     "nodemon": "^2.0.14",
-    "prettier": "2.4.1"
-  },
-  "dependencies": {
+    "prettier": "2.4.1",
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
-    "aws-sdk": "^2.1033.0",
-    "axios": "^0.24.0",
-    "body": "^5.1.0",
-    "dotenv": "^10.0.0",
-    "lodash.isequal": "^4.5.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1033.0",
+    "body": "^5.1.0",
+    "dotenv": "^10.0.0",
+    "lodash.isequal": "^4.5.0"
   }
 }
