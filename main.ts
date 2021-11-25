@@ -14,7 +14,7 @@ const bidEvent: { [name: string]: IChannel } = {};
 const message = getMessageTransport('aws', {
   accessKeyId: process.env.AWS_ACCESS_KEY,
   secretAccessKey: process.env.AWS_SECRET_KEY,
-  region: process.env.AWS_REGION,
+  region: 'us-east-1',
   topic: process.env.AWS_TOPIC,
 });
 
