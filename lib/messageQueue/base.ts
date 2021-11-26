@@ -1,4 +1,6 @@
-import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from '../types';
+import {
+  AWSInitializationOptions, AWSSubscribe, IMessageTransport, IResponse,
+} from '../types';
 
 abstract class MessageTransport {
   public abstract options: any;
@@ -15,6 +17,12 @@ abstract class MessageTransport {
     const transport = this.factoryMethod(this.options);
 
     await transport.publishMessage(message, options);
+  }
+
+  public async confirmSubscription(url: string, res: IResponse) {
+    const transport = this.factoryMethod(this.options);
+
+    await transport.confirm(url, res);
   }
 }
 

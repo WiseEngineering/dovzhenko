@@ -1,11 +1,14 @@
 /* eslint-disable class-methods-use-this */
 // eslint-disable-next-line max-classes-per-file
+import { get } from 'https';
 import AWS, { SNS } from 'aws-sdk';
 import { PublishInput, SubscribeInput } from 'aws-sdk/clients/sns';
 
 import MessageTransport from './base';
 import { error } from '../log';
-import { AWSInitializationOptions, AWSSubscribe, IMessageTransport } from '../types';
+import {
+  AWSInitializationOptions, AWSSubscribe, IMessageTransport, IResponse,
+} from '../types';
 
 class AWSMessageTransport implements IMessageTransport {
   private client: SNS;
@@ -36,6 +39,23 @@ class AWSMessageTransport implements IMessageTransport {
     const payload: PublishInput = { TopicArn: topic || this.options.topic, Message: message };
     await this.client.publish(payload).promise().catch((e) => {
       error(e.message);
+    });
+  }
+
+  public async confirm(url: any, res: IResponse): Promise<void> {
+    const promise = new Promise((resolve, reject) => {
+      get(url, (response) => {
+        if (response.statusCode === 200) {
+          return resolve('');
+        }
+
+        return reject();
+      });
+    });
+
+    promise.then(() => {
+      res.writeHead(200);
+      res.end();
     });
   }
 }

@@ -63,6 +63,7 @@ export type MessageTransports = 'aws';
 export interface IMessageTransport {
   subscribe: (options: any) => Promise<void>
   publishMessage: (message: any, options?: string) => Promise<void>
+  confirm: (url: string, res: IResponse) => Promise<void>
 }
 
 export interface AWSInitializationOptions {

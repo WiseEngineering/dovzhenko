@@ -1,5 +1,3 @@
-import { get } from 'https';
-
 import Server from './lib/server';
 import { IRequest, IResponse, IChannel } from './lib/types';
 import getMessageTransport from './lib/messageQueue/messageQueue';
@@ -21,7 +19,7 @@ const message = getMessageTransport('aws', {
 app.append('/subscribe', async (req: IRequest, res: IResponse) => {
   const { body } = req;
 
-  if (!body?.endpoint || !body.protocol) {
+  if (!body?.endpoint || !body?.protocol) {
     res.write('No required data provided');
     res.end();
   }
@@ -34,7 +32,7 @@ app.append('/subscribe', async (req: IRequest, res: IResponse) => {
     protocol,
   });
 
-  res.write('subscribed');
+  res.writeHead(200);
   res.end();
 });
 
@@ -47,30 +45,14 @@ app.append('/bid/:slug', async (req: IRequest, res: IResponse) => {
   }
 
   if (body?.Type === 'SubscriptionConfirmation') {
-    const promise = new Promise((resolve, reject) => {
-      const url = body.SubscribeURL;
-
-      get(url, (response) => {
-        if (response.statusCode === 200) {
-          return resolve('');
-        }
-
-        return reject();
-      });
-    });
-
-    promise.then(() => {
-      res.writeHead(200);
-      res.end();
-    });
+    const url = body.SubscribeURL;
+    await message.confirmSubscription(url, res);
   }
 
   if (body?.Type === 'Notification') {
     const { payload, event } = JSON.parse(body?.Message);
     await bidEvent[slug].publish({ payload }, event);
-  }
-
-  if (!body?.Type) {
+  } else if (!body?.Type) {
     bidEvent[slug].subscribe(req, res);
   }
 });
